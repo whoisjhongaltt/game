@@ -17,7 +17,8 @@ GameState :: struct {
 	cam        : rl.Camera3D,
 	cam_bounds : mat3,
 	game_text  : cstring,
-	world :^World,
+	player_index : EntityIndex,
+	world        :^World,
 	low_entities : [dynamic]LowEntity
 }
 
@@ -38,7 +39,7 @@ game_init :: proc (game_data : rawptr){
 	}else{
 		game_state    = new(GameState)
 		using game_state
-		cam.position = {10, 10, 10}
+		cam.position = {0, 20, 20}
 		cam.target   = {0,   0,  0}
 		cam.up       = {0, 1, 0}
 		cam.fovy     = 45.0
@@ -70,7 +71,7 @@ game_render_entities :: proc(game: ^GameState, region: ^SimRegion){
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLUE)
 
-	rl.UpdateCamera(&game.cam, .THIRD_PERSON)
+	//rl.UpdateCamera(&game.cam, .THIRD_PERSON)
 	rl.DrawFPS(0, 0)
 
 	rl.BeginMode3D(game.cam)
@@ -86,7 +87,6 @@ game_render_entities :: proc(game: ^GameState, region: ^SimRegion){
 			}
 			case .wall: {
 				rl.DrawCubeV(entity.pos, {1,1,1}, rl.RED)
-				rl.DrawCubeWiresV(entity.pos, {1,1,1}, rl.WHITE)
 			}
 		}
 	}
@@ -99,12 +99,21 @@ game_render_entities :: proc(game: ^GameState, region: ^SimRegion){
 @(export)
 game_render :: proc(){ 
 
-	sim_region := sim_begin(game_state, {}, game_state.cam_bounds)
+	center : WorldPos
+	if game_state.player_index != 0{
+		player := &game_state.low_entities[game_state.player_index]
+
+		if player.type == .player{
+			center = player.world_pos
+		}
+	}
+	sim_region := sim_begin(game_state, center, game_state.cam_bounds)
 
 	/*
 		update movement
 	*/
 
+	game_render_entities(game_state, sim_region)
 	for &entity in &sim_region.entities{
 
 		#partial switch entity.type{
@@ -125,7 +134,6 @@ game_render :: proc(){
 		}
 	}
 
-	game_render_entities(game_state, sim_region)
 
 	sim_end(sim_region, game_state)
 }

@@ -82,6 +82,9 @@ entity_add_low_entity :: proc(game: ^GameState, type: EntityType, pos: WorldPos)
 
 	if type != .null && new_low.storage_index > 0{
 		world_update_entity_location(game.world, new_low.storage_index, &new_low, pos)
+	} 
+	if type == .player{
+		game.player_index = new_low.storage_index
 	}
 	append(&game.low_entities, new_low)
 }
