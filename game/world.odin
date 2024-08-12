@@ -4,9 +4,9 @@ import "core:math/linalg"
 
 
 TILE_CHUNK_UNINITILIZED : i32 : max(i32)
-TILE_COUNT_PER_WIDTH    : i32 : 10 //x axis
+TILE_COUNT_PER_WIDTH    : i32 : 20 //x axis
 TILE_COUNT_PER_HEIGHT   : i32 : 10 //y axis
-TILE_COUNT_PER_BREADTH  : i32 : 10 //z axis
+TILE_COUNT_PER_BREADTH  : i32 : 20 //z axis
 
 
 WorldPos :: struct{

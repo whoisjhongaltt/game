@@ -1,0 +1,16 @@
+don't drown
+
+water does breadth first search and moves one block each step
+step is when a player moves one block
+
+if the water touches the fire or player then the game is over 
+the level is complete when the player presses space and the water is flowed unctroably
+
+
+future ideas-fog of war so that players needs to loose extra move to explore
+
+
+TODO: 
+	water simulation
+	use highmap like animation to make water look like water
+	Use texture tiling 

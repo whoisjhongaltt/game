@@ -10,7 +10,7 @@ import win32 "core:sys/windows"
 	Raylib's coodinate system
 */
 
-window_width  :i32: 1000
+window_width  :i32: 1200
 window_height :i32: 800
 
 
@@ -81,13 +81,15 @@ main :: proc(){
 	InitWindow(window_width, window_height, "Coodinates")
 
 
-
-
 	SetTargetFPS(60)
 
 	for !WindowShouldClose(){
 
 		update_game_api()
+
+		if IsKeyDown(.F3){
+			ToggleFullscreen()
+		}
 
 
 		if platform.game_loaded{

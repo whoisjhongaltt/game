@@ -1,5 +1,7 @@
 package main
 
+import rl "vendor:raylib"
+
 EntityIndex :: u32
 
 
@@ -18,6 +20,7 @@ EntityFlagsEnum :: enum{
 	entity_flag_selected,
 	entity_flag_vflipped,
 	eneity_anim_stretch_side, //if true then width else height
+	entity_rotated,
 }
 
 EntityFlags :: bit_set[EntityFlagsEnum]
@@ -68,17 +71,21 @@ SimEntity :: struct {
 
 	anim_state : AnimationState,
 	direction  : vec3,
+
+	color : rl.Color
 }
 
 
 
-entity_add_low_entity :: proc(game: ^GameState, type: EntityType, pos: WorldPos){
+entity_add_low_entity :: proc(game: ^GameState, type: EntityType, pos: WorldPos, flags : EntityFlags = {}, color : rl.Color = rl.RED){
 
 	new_low : LowEntity = {}
 	new_low.storage_index = u32(len(game.low_entities))
 	new_low.type          = type
 	new_low.world_pos.chunk.x = TILE_CHUNK_UNINITILIZED
 	new_low.world_pos.chunk.y = TILE_CHUNK_UNINITILIZED
+	new_low.color = color
+	new_low.flags = flags
 
 	if type != .null && new_low.storage_index > 0{
 		world_update_entity_location(game.world, new_low.storage_index, &new_low, pos)

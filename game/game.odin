@@ -8,9 +8,6 @@ import "base:runtime"
 /* Get hot reloading working */
 
 
-Entity :: struct {
-
-}
 
 GameState :: struct {
 	initilized : bool,
@@ -19,7 +16,10 @@ GameState :: struct {
 	game_text  : cstring,
 	player_index : EntityIndex,
 	world        :^World,
-	low_entities : [dynamic]LowEntity
+	low_entities : [dynamic]LowEntity,
+
+	cube_mesh    : rl.Mesh,
+	cube_model   : rl.Model,
 }
 
 
@@ -34,42 +34,60 @@ game_init :: proc (game_data : rawptr){
 
 		if old_game_state.initilized{
 			game_state = old_game_state
-		}
+	}
 		game_state.game_text = "Samrat Ghale"
 	}else{
 		game_state    = new(GameState)
 		using game_state
-		cam.position = {0, 20, 20}
+		cam.position = {0, 35, 30}
 		cam.target   = {0,   0,  0}
 		cam.up       = {0, 1, 0}
 		cam.fovy     = 45.0
 		cam.projection = .PERSPECTIVE
-		cam_bounds[0] = {-20, -3, -20}
-		cam_bounds[1] = {20, 3, 20}
+		cam_bounds[0] = {-50, -3, -50}
+		cam_bounds[1] = {50, 3, 50}
 
 		world_initilize(game_state)
-		entity_add_low_entity(game_state, .null, {})
-		entity_add_low_entity(game_state, .player, {})
+		entity_add_low_entity(game_state, .null,{}, {})
+		entity_add_low_entity(game_state, .player, {chunk={0,0,0}, offset={5, 0, 5}},{}, rl.YELLOW)
 
-		for i in 0..=9{
-			for j in 0..=9{
-				entity_add_low_entity(game_state, .wall, {offset={f32(i), 0, f32(j)}})
+		for i in 0..<TILE_COUNT_PER_BREADTH{
+			for j in 0..<TILE_COUNT_PER_WIDTH{
+				entity_add_low_entity(game_state, .wall, {offset={f32(i), 0, f32(j)}},{})
 			}
+			entity_add_low_entity(game_state, .wall, {offset={f32(i), 1, f32(0)}},{}, rl.BLUE)
+			entity_add_low_entity(game_state, .wall, {offset={f32(0), 1, f32(i)}},{}, rl.BLUE)
+			entity_add_low_entity(game_state, .wall, {offset={f32(i), 1, f32(TILE_COUNT_PER_WIDTH-1)}},{}, rl.BLUE)
+			entity_add_low_entity(game_state, .wall, {offset={f32(TILE_COUNT_PER_WIDTH-1), 1, f32(i)}},{}, rl.BLUE)
 		}
 
-		for i in 0..=9{
-			for j in 0..=9{
-				entity_add_low_entity(game_state, .wall, {chunk={1, 0, 1}, offset={f32(i), 0, f32(j)}})
+		offset :i32= 7
+		for i in 0..<TILE_COUNT_PER_BREADTH{
+
+			for j in 0..<TILE_COUNT_PER_BREADTH{
+				entity_add_low_entity(game_state, .wall, {chunk={0, 0, -1}, offset={f32(i), 5, f32(j-offset)}})
 			}
+			entity_add_low_entity(game_state, .wall, {chunk={0, 0, -1},offset={f32(i), 6, f32(0-offset)}},{},  rl.BLUE)
+			entity_add_low_entity(game_state, .wall, {chunk={0, 0, -1},offset={f32(0), 6, f32(i-offset)}},{},  rl.BLUE)
+			entity_add_low_entity(game_state, .wall, {chunk={0, 0, -1},offset={f32(i), 6, f32(TILE_COUNT_PER_WIDTH-1-offset)}},{},  rl.BLUE)
+			entity_add_low_entity(game_state, .wall, {chunk={0, 0, -1},offset={f32(TILE_COUNT_PER_WIDTH-1), 6, f32(i)-f32(offset)}},{},  rl.BLUE)
+		}
+
+		for i in 1..<offset+3{
+			entity_add_low_entity(game_state, .wall, {chunk={0, 0, 0},offset={f32(8), f32(i)/2.0, -f32(i)}},{.entity_rotated}, rl.RED)
 		}
 	}
+
+	game_state.cube_mesh  = rl.GenMeshCube(1, 1, 1)
+	game_state.cube_model = rl.LoadModelFromMesh(game_state.cube_mesh)
+
 	game_state.initilized = true
 
 }
 
 game_render_entities :: proc(game: ^GameState, region: ^SimRegion){
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.BLUE)
+	rl.ClearBackground(rl.BLACK)
 
 	//rl.UpdateCamera(&game.cam, .THIRD_PERSON)
 	rl.DrawFPS(0, 0)
@@ -83,10 +101,18 @@ game_render_entities :: proc(game: ^GameState, region: ^SimRegion){
 				pos := entity.pos
 				pos.y += 1 
 				rl.DrawCubeWiresV(pos, {1,1,1}, rl.WHITE)
-				rl.DrawCubeV(pos, {1,1,1}, rl.GREEN)
+				rl.DrawCubeV(pos, {1,1,1}, entity.color)
 			}
 			case .wall: {
-				rl.DrawCubeV(entity.pos, {1,1,1}, rl.RED)
+				//rl.DrawCubeV(entity.pos, {1,1,1}, entity.color)
+
+				if .entity_rotated in entity.flags{
+					rl.DrawModelEx(game_state.cube_model, entity.pos, {1, 0, 0}, -65, {1,1,1}, entity.color)
+					rl.DrawModelWiresEx(game_state.cube_model, entity.pos, {1, 0, 0}, -65, {1,1,1}, rl.WHITE)
+				}else{
+					rl.DrawModelEx(game_state.cube_model, entity.pos, {0, 0, 0}, 0, {1,1,1}, entity.color)
+				}
+				//rl.DrawCubeWiresV(entity.pos, {1,1,1}, rl.WHITE)
 			}
 		}
 	}
@@ -107,7 +133,7 @@ game_render :: proc(){
 			center = player.world_pos
 		}
 	}
-	sim_region := sim_begin(game_state, center, game_state.cam_bounds)
+	sim_region := sim_begin(game_state, {}, game_state.cam_bounds)
 
 	/*
 		update movement
